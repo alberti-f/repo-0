@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
-""" Description """
+""" This script uses the prim_zone labels to identify the vertices at the
+    intersection between the primary sensory-motor fields of each subject.
+    Then, it extracts the mean percentile of the principal gradient at these
+    vertices in the original participant and in all the others.
+"""
 
 import argparse
 import nibabel as nib
@@ -11,14 +15,14 @@ import xml.etree.ElementTree as xml
 import pandas as pd
 
 parser = argparse.ArgumentParser(description='A test program.')
-parser.add_argument("-s", "--subj_id", help="Subject ID", type=int)
+parser.add_argument("-s", "--subj_id", help="Subject ID", type=str)
 parser.add_argument("-o", "--output_dir", help="Output directory", type=str)
 parser.add_argument("-r", "--root_dir", help="Root directory", type=str)
 args = parser.parse_args()
 
-subj_id = args.subj_id
 output_dir = args.output_dir
 root_dir = args.root_dir
+subj_id = open(args.subj_id).read().split()
 
 # https://github.com/AthenaEPI/logpar/blob/master/logpar/utils/cifti_utils.py
 def extract_matrixIndicesMap(cifti_header, direction):
@@ -73,14 +77,14 @@ def extract_brainmodel(cifti_header, structure, direction):
 
 def extract_zone_convergence(sub, hemi, brain_structure):
     # load surf
-    surf_raw = nib.load(f'{root_dir}{sub}/T1w/fsaverage_LR32k/{sub}.{hemi}.midthickness_MSMAll.32k_fs_LR.surf.gii')
+    surf_raw = nib.load(f'{root_dir}{sub}/Structural/{sub}.{hemi}.midthickness_MSMAll.32k_fs_LR.surf.gii')
     surf = []
     surf.append(surf_raw.darrays[0].data)
     surf.append(surf_raw.darrays[1].data)
     vertices, triangles = surf#[surf_raw.darrays[i].data for i in range(2)]
 
     # load labels
-    labels = nib.load(f'{root_dir}{sub}/{sub}.zone_prim.32k_fs_LR.dlabel.nii')
+    labels = nib.load(f'{root_dir}{sub}/Structural/{sub}.zone_prim.32k_fs_LR.dlabel.nii')
     zones = labels.get_fdata().squeeze()
 
     brain_model = extract_brainmodel(labels.header, brain_structure, 'COLUMN')
@@ -141,7 +145,7 @@ def get_scalar_pctile(cifti_scalar, vertices, brain_structure, scalar_row=0):
 #-----------------------------------------------------------------------------------
 
 ### Obtain the gradient values corresponding to the convergence nodes and relative percentile
-print("Extracting principal gradient and percentile of convergence nodes")
+print("Extracting principal gradient and percentile of convergence nodes\n\n")
 
 # pre-assign the output dataframe
 gradientile_df = pd.DataFrame(columns=['ID_vtx','ID_grad','hemisphere',
@@ -150,9 +154,10 @@ gradientile_df = pd.DataFrame(columns=['ID_vtx','ID_grad','hemisphere',
                                          'mean','percentile'])
 
 for subj_grad in subj_id:
+    print(subj_grad)
     # load a subject's gradient1
     hemisphere = {'L':'CIFTI_STRUCTURE_CORTEX_LEFT', 'R':'CIFTI_STRUCTURE_CORTEX_RIGHT'}
-    grads = nib.load(f'{output_dir}{subj_grad}.REST1_gcca.dscalar.nii')
+    grads = nib.load(f'{root_dir}{subj_grad}/gradsGCCA.dscalar.nii')
     
     # get gradient and percentile of convergence nodes of all subjs from the current grad
     for subj_vtx in subj_id:        
@@ -169,7 +174,6 @@ for subj_grad in subj_id:
     del grads
 # save output        
 gradientile_df.to_csv(f'{output_dir}gradientiles.csv',index=False)
-# print("Done!")
 
 #-----------------------------------------------------------------------------------
 
