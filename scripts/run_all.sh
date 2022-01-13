@@ -25,13 +25,13 @@ source /path/to/projectA-${MODULE_CPU_TYPE}/bin/activate
 
 ### VARIABLES TO SET BEFORE RUNNING
 # directory containing subdirectories named fter subject IDs that contain the timeseries and surface files
-root_dir = 
+root_dir=/well/margulies/projects/data/hcp
 # directory where all intermediate files and the final output will be saved
-output_dir = 
+output_dir=/well/margulies/projects/analyses/gcca/getGradsGCCA
 # list of IDs of subjects to include in the analyses
 # $SGE_TASK_ID
 # For example: 
-sub_list=./data2/manifest.txt
+sub_list=/well/margulies/projects/analyses/gcca/subj_list.txt
 subj_id=$(sed -n "${SGE_TASK_ID}" $sub_list)
 
 #-----------------------------------------------------------------------------------
